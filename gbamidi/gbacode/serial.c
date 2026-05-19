@@ -25,16 +25,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "seq.h"
 #include "sound.h"
 
-#define SERBUFFSZ 16
+#define SERBUFFSZ 128
+#define SERIAL_RUNTIME_PROBE 0xFE
+#define SERIAL_RUNTIME_ACK 0x574F
 
-static volatile char serialBuff[SERBUFFSZ];
-static volatile char *serialBuffWptr=serialBuff, *serialBuffRptr=serialBuff;
+static volatile unsigned char serialBuff[SERBUFFSZ];
+static volatile unsigned char *serialBuffWptr=serialBuff, *serialBuffRptr=serialBuff;
+static volatile char serialOverflow=0;
 
 void serialInt() {
-	char recved=REG_SCD0;
+	unsigned char recved=REG_SCD0;
+	volatile unsigned char *nextWptr=serialBuffWptr+1;
+	REG_SCCNT_H=0;
+	if (recved==SERIAL_RUNTIME_PROBE) {
+		REG_SCCNT_H=SERIAL_RUNTIME_ACK;
+		return;
+	}
+	if (nextWptr==serialBuff+SERBUFFSZ) nextWptr=serialBuff;
+	if (nextWptr==serialBuffRptr) {
+		serialOverflow=1;
+		return;
+	}
 	*serialBuffWptr=recved;
-	serialBuffWptr++;
-	if (serialBuffWptr==serialBuff+SERBUFFSZ) serialBuffWptr=serialBuff;
+	serialBuffWptr=nextWptr;
 }
 
 static int serialGetChar() {
@@ -55,14 +68,55 @@ void serialInit() {
 	REG_SCCNT=(1<<0xD)|(1<<0xE)|3; // multiplayer, IRQ on completion, 115200 bps
 }
 
+static void serialAllNotesOff() {
+	int x;
+	for (x=0; x<128; x++) {
+		soundPlayNote(x, 0);
+		soundPlaySample(x, 0);
+		soundPlayNoteSweep(x, 0);
+		soundPlayDirect(x, 0);
+		soundPlayNoise(x, 0);
+	}
+}
+
 void serialTick() {
 	static int pos=0;
-	static char recved[7];
-	static char channel;
+	static unsigned char recved[7];
+	static unsigned char channel;
+	static unsigned char runningStatus=0;
 	int r;
+
+	if (serialOverflow) {
+		REG_IME=0;
+		serialBuffRptr=serialBuffWptr;
+		serialOverflow=0;
+		REG_IME=1;
+		pos=0;
+		serialAllNotesOff();
+		return;
+	}
 
 	r=serialGetChar();
 	if (r==-1) return;
+
+	if (r>=0xF8) {
+		return;
+	}
+	if (r>=0xF0) {
+		pos=0;
+		runningStatus=0;
+		return;
+	}
+	if (r&0x80) {
+		pos=0;
+		runningStatus=r;
+	} else if (pos==0) {
+		if (runningStatus==0) return;
+		recved[0]=runningStatus;
+		channel=(recved[0]&0xF)+1;
+		recved[0]&=0xf0; //We already know this is our channel.
+		pos=1;
+	}
 
 	recved[pos]=r;
 	if (pos==0) {

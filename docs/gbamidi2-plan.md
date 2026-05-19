@@ -18,9 +18,9 @@ stage2 using the tangrs 32-bit SIO normal-mode protocol:
 5. stage1 jumps to `0x02000000`.
 
 This requires the GBA `SO` line wired to RP2040 `GPIO4`. The current GBAMIDI2
-stage profile uses `SD -> GPIO5` and `SO -> GPIO4`; the older GBA-cable stage
-profile is deprecated for now. The old three-wire SpritesMods MIDI path is not
-enough for the linked normal-mode second-stage protocol.
+stage profile uses `SO -> GPIO4`, and the working stage1 BIOS SD path also uses
+that same RP2040 pin. The old three-wire SpritesMods MIDI path is not enough for
+the linked normal-mode second-stage protocol.
 
 ## Channel Map Target
 
@@ -97,7 +97,7 @@ framed independently so it cannot be confused with normal MIDI data.
 
 1. Header text and build pipeline: done.
 2. Two-stage loader using tangrs normal-mode protocol: initial implementation done.
-3. Hardware test of stage1 plus stage2 with `SD -> GPIO5` and `SO -> GPIO4`.
+3. Hardware test of stage1 plus stage2 with `SO -> GPIO4`.
 4. Channel routing table and UI labels.
 5. Bidirectional link/control test: GBA sends one settings packet; RP2040 logs
    or echoes it.

@@ -1,5 +1,5 @@
 ARCH	:=	-mthumb -mthumb-interwork
-CFLAGS	:=	-g -Os -Wall -Wno-switch -Wno-multichar $(ARCH) $(INCLUDE) -finline-limit=10 -fno-unroll-loops -ffreestanding -flto -ffunction-sections -fdata-sections
+CFLAGS	:=	-g -Os -Wall -Wno-switch -Wno-multichar $(ARCH) $(INCLUDE) -finline-limit=10 -fno-unroll-loops -ffreestanding -fcommon -flto -ffunction-sections -fdata-sections
 ASFLAGS	:=	-g -Wa,--warn $(ARCH)
 LDFLAGS :=  -nostdlib -T crtls/lnkscript -lgcc -static -L /home/jeroen/c/stm32/toolchain/lib/gcc/arm-none-eabi/4.5.2/
 #PREFIX	:=	arm-linux-gnueabi-
