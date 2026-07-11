@@ -22,6 +22,12 @@ Please preserve attribution to SpritesMods for the original GBA MIDI concept, pr
   - The working stage1 BIOS SD path also uses `GPIO4`.
 - The sketch only tries the GBAMIDI2 GBC-cable profile and only enters MIDI mode after the stage1 and stage2 uploads succeed.
 
+## Schematic
+
+![GBAMIDI2 schematic](schematics/SCH_GBAMIDI2_2026-07-11.jpg)
+
+PDF: [SCH_GBAMIDI2_2026-07-11.pdf](schematics/SCH_GBAMIDI2_2026-07-11.pdf)
+
 ## USB
 
 - Use the RP2040's built-in USB port as the USB MIDI device.
