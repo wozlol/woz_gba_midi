@@ -2,7 +2,14 @@
   GBA_Midi_RP2040_Woz.ino
 
   Goal: Stable RP2040-first multiboot uploader for a GBA MIDI ROM,
-  then USB/DIN MIDI forwarding after the GBA runtime is loaded.
+  then three-way GBA, USB, and DIN/serial MIDI forwarding.
+
+  The device also works as a bidirectional USB MIDI adapter:
+  - USB MIDI input -> GBA and DIN/serial MIDI output
+  - DIN/serial MIDI input -> GBA and USB MIDI output
+  The adapter paths are enabled by default below. MIDI received from one
+  external interface is copied to the other interface exactly once; it is
+  also independently copied to the GBA.
 
   Attribution:
   - Based on and adapted from the SpritesMods GBA MIDI project by
@@ -20,7 +27,8 @@
   - Embedded stage1 loader and stage2 gbamidi.gba payload in flash.
   - Stage1 follows tangrs/usb-gba-multiboot's second-stage loader protocol:
     BIOS multiboot first, then SIO normal-mode 32-bit stage2 transfer.
-  - USB MIDI and DIN MIDI stay idle until the ROM upload reports success.
+  - MIDI from USB or DIN/serial is always routed to the other interface.
+    Its additional GBA copy starts after the ROM upload reports success.
 
  *   RP2040 / Arduino-Pico settings:                                       *
  *     - IMPORTANT set CPU Speed: "240 MHz (Overclock)"                   *
@@ -73,8 +81,10 @@ constexpr bool STAGE1_EXEC_DIAGNOSTIC_ONLY = false;
 constexpr bool STOP_AFTER_STAGE2_FAILURE = true;
 
 // ---------------- MIDI behavior ----------------
-constexpr bool USB_TO_DIN_THRU = true;
-constexpr bool DIN_TO_USB_THRU = true;
+// Together these make the device a bidirectional USB MIDI <-> DIN adapter.
+// Every received byte is also sent to the GBA when its runtime is ready.
+constexpr bool USB_TO_DIN_ADAPTER = true;
+constexpr bool DIN_TO_USB_ADAPTER = true;
 constexpr uint8_t MIDI_SERVICE_BYTE_BUDGET = 32;
 constexpr uint16_t USB_THRU_QUEUE_SIZE = 1024;
 constexpr uint16_t USB_THRU_QUEUE_MASK = USB_THRU_QUEUE_SIZE - 1;
@@ -2022,8 +2032,9 @@ void serviceUsbMidi() {
     budget--;
 
     uint8_t b = static_cast<uint8_t>(v);
+    // USB MIDI IN fans out to both destinations: GBA and DIN MIDI OUT.
     forwardMidiByteToGba(b);
-    if (USB_TO_DIN_THRU) {
+    if (USB_TO_DIN_ADAPTER) {
       Serial1.write(b);
     }
   }
@@ -2034,8 +2045,9 @@ void serviceDinMidi() {
   while (budget > 0 && Serial1.available() > 0) {
     uint8_t b = static_cast<uint8_t>(Serial1.read());
     budget--;
+    // DIN MIDI IN fans out to both destinations: GBA and USB MIDI OUT.
     forwardMidiByteToGba(b);
-    if (DIN_TO_USB_THRU) {
+    if (DIN_TO_USB_ADAPTER) {
       enqueueUsbThruByte(b);
     }
   }

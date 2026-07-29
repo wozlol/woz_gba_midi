@@ -2,7 +2,7 @@
 
 https://woz.lol
 
-RP2040/Arduino sketch for uploading an embedded GBA MIDI multiboot ROM, then forwarding built-in USB MIDI and DIN MIDI to the running GBA program.
+RP2040/Arduino sketch for uploading an embedded GBA MIDI multiboot ROM, then forwarding built-in USB MIDI and DIN MIDI to the running GBA program. It also works as a bidirectional USB MIDI adapter: USB MIDI input is copied to DIN MIDI output, and DIN MIDI input is copied to USB MIDI output, while both inputs continue to feed the GBA.
 
 This project is based on and adapted from the SpritesMods GBA MIDI project by Jeroen Domburg / Sprite_tm:
 
@@ -19,6 +19,8 @@ Please preserve attribution to SpritesMods for the original GBA MIDI concept, pr
 - `GBA_Midi_RP2040_Woz.ino` is the current working RP2040 sketch.
 - It uploads a small embedded GBA stage1 loader over the GBA link port, then streams the larger GBAMIDI2 runtime as stage2 before switching to MIDI forwarding.
 - Built-in USB enumerates as a USB MIDI device.
+- USB MIDI input is sent to both the GBA and DIN MIDI output.
+- DIN MIDI input is sent to both the GBA and USB MIDI output.
 - Current GBAMIDI2 two-stage cable profile:
   - `SC=GPIO2`, `SI=GPIO3`, `SO=GPIO4`
   - The working stage1 BIOS SD path also uses `GPIO4`.
